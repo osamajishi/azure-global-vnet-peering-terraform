@@ -1,0 +1,241 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "virtualNetworks_vnet_eastus_name": {
+            "defaultValue": "vnet-eastus",
+            "type": "String"
+        },
+        "virtualNetworks_vnet_westeurope_name": {
+            "defaultValue": "vnet-westeurope",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2025-07-01",
+            "name": "[parameters('virtualNetworks_vnet_eastus_name')]",
+            "location": "eastus",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_westeurope_name'))]"
+            ],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "10.0.0.0/16"
+                    ]
+                },
+                "privateEndpointVNetPolicies": "Disabled",
+                "dhcpOptions": {
+                    "dnsServers": []
+                },
+                "subnets": [
+                    {
+                        "name": "subnet-eastus",
+                        "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_eastus_name'), 'subnet-eastus')]",
+                        "properties": {
+                            "addressPrefix": "10.0.1.0/24",
+                            "serviceEndpoints": [],
+                            "delegations": [],
+                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled",
+                            "defaultOutboundAccess": true
+                        }
+                    }
+                ],
+                "virtualNetworkPeerings": [
+                    {
+                        "name": "vnet1-to-vnet2",
+                        "id": "[resourceId('Microsoft.Network/virtualNetworks/virtualNetworkPeerings', parameters('virtualNetworks_vnet_eastus_name'), 'vnet1-to-vnet2')]",
+                        "properties": {
+                            "peeringState": "Connected",
+                            "peeringSyncLevel": "FullyInSync",
+                            "remoteVirtualNetwork": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_westeurope_name'))]"
+                            },
+                            "allowVirtualNetworkAccess": true,
+                            "allowForwardedTraffic": true,
+                            "allowGatewayTransit": false,
+                            "useRemoteGateways": false,
+                            "doNotVerifyRemoteGateways": false,
+                            "peerCompleteVnets": true,
+                            "remoteAddressSpace": {
+                                "addressPrefixes": [
+                                    "10.1.0.0/16"
+                                ]
+                            },
+                            "remoteVirtualNetworkAddressSpace": {
+                                "addressPrefixes": [
+                                    "10.1.0.0/16"
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "enableDdosProtection": false
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2025-07-01",
+            "name": "[parameters('virtualNetworks_vnet_westeurope_name')]",
+            "location": "westeurope",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_eastus_name'))]"
+            ],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "10.1.0.0/16"
+                    ]
+                },
+                "privateEndpointVNetPolicies": "Disabled",
+                "dhcpOptions": {
+                    "dnsServers": []
+                },
+                "subnets": [
+                    {
+                        "name": "subnet-westeurope",
+                        "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_westeurope_name'), 'subnet-westeurope')]",
+                        "properties": {
+                            "addressPrefix": "10.1.1.0/24",
+                            "serviceEndpoints": [],
+                            "delegations": [],
+                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled",
+                            "defaultOutboundAccess": true
+                        }
+                    }
+                ],
+                "virtualNetworkPeerings": [
+                    {
+                        "name": "vnet2-to-vnet1",
+                        "id": "[resourceId('Microsoft.Network/virtualNetworks/virtualNetworkPeerings', parameters('virtualNetworks_vnet_westeurope_name'), 'vnet2-to-vnet1')]",
+                        "properties": {
+                            "peeringState": "Connected",
+                            "peeringSyncLevel": "FullyInSync",
+                            "remoteVirtualNetwork": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_eastus_name'))]"
+                            },
+                            "allowVirtualNetworkAccess": true,
+                            "allowForwardedTraffic": true,
+                            "allowGatewayTransit": false,
+                            "useRemoteGateways": false,
+                            "doNotVerifyRemoteGateways": false,
+                            "peerCompleteVnets": true,
+                            "remoteAddressSpace": {
+                                "addressPrefixes": [
+                                    "10.0.0.0/16"
+                                ]
+                            },
+                            "remoteVirtualNetworkAddressSpace": {
+                                "addressPrefixes": [
+                                    "10.0.0.0/16"
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "enableDdosProtection": false
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion": "2025-07-01",
+            "name": "[concat(parameters('virtualNetworks_vnet_eastus_name'), '/subnet-eastus')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_eastus_name'))]"
+            ],
+            "properties": {
+                "addressPrefix": "10.0.1.0/24",
+                "serviceEndpoints": [],
+                "delegations": [],
+                "privateEndpointNetworkPolicies": "Enabled",
+                "privateLinkServiceNetworkPolicies": "Enabled",
+                "defaultOutboundAccess": true
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion": "2025-07-01",
+            "name": "[concat(parameters('virtualNetworks_vnet_westeurope_name'), '/subnet-westeurope')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_westeurope_name'))]"
+            ],
+            "properties": {
+                "addressPrefix": "10.1.1.0/24",
+                "serviceEndpoints": [],
+                "delegations": [],
+                "privateEndpointNetworkPolicies": "Enabled",
+                "privateLinkServiceNetworkPolicies": "Enabled",
+                "defaultOutboundAccess": true
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+            "apiVersion": "2025-07-01",
+            "name": "[concat(parameters('virtualNetworks_vnet_eastus_name'), '/vnet1-to-vnet2')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_eastus_name'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_westeurope_name'))]"
+            ],
+            "properties": {
+                "peeringState": "Connected",
+                "peeringSyncLevel": "FullyInSync",
+                "remoteVirtualNetwork": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_westeurope_name'))]"
+                },
+                "allowVirtualNetworkAccess": true,
+                "allowForwardedTraffic": true,
+                "allowGatewayTransit": false,
+                "useRemoteGateways": false,
+                "doNotVerifyRemoteGateways": false,
+                "peerCompleteVnets": true,
+                "remoteAddressSpace": {
+                    "addressPrefixes": [
+                        "10.1.0.0/16"
+                    ]
+                },
+                "remoteVirtualNetworkAddressSpace": {
+                    "addressPrefixes": [
+                        "10.1.0.0/16"
+                    ]
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+            "apiVersion": "2025-07-01",
+            "name": "[concat(parameters('virtualNetworks_vnet_westeurope_name'), '/vnet2-to-vnet1')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_westeurope_name'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_eastus_name'))]"
+            ],
+            "properties": {
+                "peeringState": "Connected",
+                "peeringSyncLevel": "FullyInSync",
+                "remoteVirtualNetwork": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_eastus_name'))]"
+                },
+                "allowVirtualNetworkAccess": true,
+                "allowForwardedTraffic": true,
+                "allowGatewayTransit": false,
+                "useRemoteGateways": false,
+                "doNotVerifyRemoteGateways": false,
+                "peerCompleteVnets": true,
+                "remoteAddressSpace": {
+                    "addressPrefixes": [
+                        "10.0.0.0/16"
+                    ]
+                },
+                "remoteVirtualNetworkAddressSpace": {
+                    "addressPrefixes": [
+                        "10.0.0.0/16"
+                    ]
+                }
+            }
+        }
+    ]
+}
